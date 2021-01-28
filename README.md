@@ -3,7 +3,7 @@
 ### Parameters
 `-c/--color` _required_, str, Input RGB color image  
 `-d/--depth` _required_, str, Input depth map  
-`-i/--intrinsic` _required_, str, Camera intrinsic parameters (column-major order, 9x1 shape)  
+`-i/--intrinsic` _optional_, str, Camera intrinsic parameters (column-major order, 9x1 shape)  
 `-nv/--no_view`, _optional_, Disable point cloud visualization  
 `-o/--output` _optional_, str, Output point cloud file path
 
