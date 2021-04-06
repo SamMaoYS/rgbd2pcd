@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import open3d as o3d
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def file_exist(file_path, ext=''):
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
@@ -57,15 +58,28 @@ def configure(args):
 def main(args):
     color = o3d.io.read_image(args.color)
     depth = o3d.io.read_image(args.depth)
+    if args.view_depth:
+        depth_data = np.asarray(depth)
+        depth_data = depth_data.astype('float')/1000
+        cm = plt.get_cmap('jet')
+        color_depth = cm(depth_data/3.0)
+        color_depth *= 255
+        color_depth = color_depth.astype('uint8')
+        plt.imshow(color_depth)
+        plt.show()
+
     color, scale, shape = align_color2depth(color, depth)
     assert color, "ERROR: Empty color image"
     assert depth, "ERROR: Empty depth image"
     assert len(scale)==2, "ERROR: Wrong scale during align color to depth"
-    rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth( \
-        color, depth, convert_rgb_to_intensity=False)
     intrinsic = get_intrinsic(args.intrinsic, shape[0], shape[1], scale)
-    pcd = o3d.geometry.PointCloud.create_from_rgbd_image( \
-        rgbd, intrinsic)
+    if args.no_color:
+        pcd = o3d.geometry.PointCloud.create_from_depth_image(depth, intrinsic)
+    else:
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth( \
+            color, depth, convert_rgb_to_intensity=False)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image( \
+            rgbd, intrinsic)
 
     if args.output:
         o3d.io.write_point_cloud(args.output, pcd)
@@ -86,9 +100,14 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--depth', dest='depth', action='store', required=True, \
         help='Input depth map')
     parser.add_argument('-i', '--intrinsic', dest='intrinsic', action='store', type=str, required=False, \
+        default="[1597.8880615234375,0,0,0,1597.8880615234375,0,943.43170166015625,714.3291015625,1]", \
         help='Camera intrinsic parameters')
     parser.add_argument('-nv', '--no_view', dest='view', default=True, action='store_false', required=False, \
         help='Disable point cloud visualization')
+    parser.add_argument('-nc', '--no_color', dest='no_color', default=False, action='store_true', required=False, \
+        help='Only use depth image')
+    parser.add_argument('-vd', '--view_depth', dest='view_depth', default=False, action='store_true', required=False, \
+        help='Visualize color mapped depth image')
     parser.add_argument('-o', '--output', dest='output', action='store', required=False, \
         help='Output point cloud file path')
 
